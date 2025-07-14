@@ -6,9 +6,11 @@ import 'package:property_listing_app/core/app/bindings/app_bindings.dart';
 import 'package:property_listing_app/core/app/routes/app_pages.dart';
 
 import 'package:property_listing_app/core/app/themes/app_theme.dart';
-import 'package:property_listing_app/core/helper/firebase_notification_web_listener.dart';
+
 import 'package:property_listing_app/core/helper/firebase_web_service.dart';
 import 'package:property_listing_app/firebase_options.dart';
+
+import 'core/helper/firebase_notification_listener.dart';
 
 main() async {
   WidgetsFlutterBinding.ensureInitialized();
