@@ -1,6 +1,6 @@
 import 'dart:html' as html;
 
-// import 'package:get/get.dart';
+import 'package:get/get.dart';
 
 void setupWebNotificationRouteListener() {
   html.window.onMessage.listen((event) {
@@ -11,8 +11,7 @@ void setupWebNotificationRouteListener() {
     if (data is Map && data.containsKey('propertyId')) {
       final propertyId = data['propertyId'];
       print("🧭 Navigating to property: $propertyId");
-      html.window.postMessage({'propertyId': propertyId}, '*');
-      // Get.toNamed('/property-detail', parameters: {'id': propertyId});
+      Get.toNamed('/property-detail', parameters: {'id': propertyId});
     }
   });
 }
