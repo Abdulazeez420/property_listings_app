@@ -1,5 +1,3 @@
-// web/firebase-messaging-sw.js
-
 importScripts('https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.6.0/firebase-messaging-compat.js');
 
@@ -14,11 +12,20 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
+
 messaging.onBackgroundMessage((payload) => {
-  console.log('Received background message: ', payload);
-  
-  // Forward to main thread
-  self.clients.matchAll().then((clients) => {
+  console.log('[firebase-messaging-sw.js] Received background message', payload);
+
+  // Optional: show a notification
+  const title = payload.notification?.title || "Property Alert";
+  const options = {
+    body: payload.notification?.body || '',
+    data: { propertyId: payload.data.propertyId }
+  };
+  self.registration.showNotification(title, options);
+
+  // Post propertyId to all clients
+  self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
     clients.forEach((client) => {
       client.postMessage({
         propertyId: payload.data.propertyId
@@ -27,7 +34,24 @@ messaging.onBackgroundMessage((payload) => {
   });
 });
 
+self.addEventListener('notificationclick', function (event) {
+  const propertyId = event.notification.data?.propertyId;
+  event.notification.close();
 
-
-
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          client.focus().then(() => {
+            client.postMessage({ propertyId });
+          });
+          return;
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(`${self.location.origin}/?propertyId=${propertyId}`);
+      }
+    })
+  );
+});
 

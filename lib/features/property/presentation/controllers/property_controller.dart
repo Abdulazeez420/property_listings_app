@@ -19,8 +19,9 @@ class PropertyController extends GetxController {
   final CameraRepository _cameraRepo = CameraRepository();
 
   final RxList<Property> properties = <Property>[].obs;
-  final RxList<Property> favoriteProperties = <Property>[].obs;
+
   final RxBool isLoading = false.obs;
+ 
   final RxBool hasMore = true.obs;
   final RxInt currentPage = 1.obs;
   final int pageSize = 20;
@@ -34,9 +35,16 @@ class PropertyController extends GetxController {
   @override
   void onInit() {
     fetchProperties();
+    
     _setupScrollListener();
 
     super.onInit();
+  }
+
+  currentProperty(propertyId) async {
+    Property? property = properties.firstWhereOrNull((p) => p.id == propertyId);
+
+  return property;
   }
 
   void _setupScrollListener() {
@@ -55,9 +63,11 @@ class PropertyController extends GetxController {
   }
 
   Future<void> fetchProperties() async {
-    if (isLoading.value) return;
+    // if (isLoading.value) return;
 
     isLoading.value = true;
+    
+
     _analytics.trackEvent(
       'property_fetch_attempt',
       parameters: {'page': currentPage.value, 'filters': filters},
@@ -73,7 +83,7 @@ class PropertyController extends GetxController {
         tags: filters['tags'],
         status: filters['status'],
       );
-
+print("newProperties :$newProperties");
       if (newProperties.isEmpty) {
         hasMore.value = false;
       } else {
@@ -85,6 +95,7 @@ class PropertyController extends GetxController {
         'property_fetch_success',
         parameters: {'count': newProperties.length, 'total': properties.length},
       );
+        isLoading.value = false;
     } catch (e) {
       _analytics.trackEvent(
         'property_fetch_error',
@@ -99,6 +110,7 @@ class PropertyController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+     
     }
   }
 
@@ -176,7 +188,7 @@ class PropertyController extends GetxController {
 
   void applyFilters(Map<String, dynamic> newFilters) {
     try {
-      // Clean filters - remove null/empty values
+  
       final cleanedFilters = Map<String, dynamic>.from(newFilters)..removeWhere(
         (key, value) =>
             value == null ||
@@ -185,19 +197,17 @@ class PropertyController extends GetxController {
             (value is bool && !value),
       );
 
-      // Reset pagination and clear existing properties
+
       currentPage.value = 1;
       properties.clear();
       hasMore.value = true;
 
-      // Update filters with price range and area
       filters.value = {
         ...cleanedFilters,
         'minPrice': minPrice.value,
         'maxPrice': maxPrice.value,
         'min_area_sqft': minArea.value,
         'max_area_sqft': maxArea.value,
-        
       };
 
       _analytics.trackEvent('filters_applied', parameters: filters);
@@ -215,65 +225,69 @@ class PropertyController extends GetxController {
     }
   }
 
- Future<void> uploadPropertyImage(String propertyId, [Uint8List? imageData]) async {
-  try {
-    if (imageData == null && !kIsWeb) {
-      final source = await _showImageSourceModal();
-      if (source != null) {
-        imageData = source == ImageSource.camera
-            ? await _cameraRepo.captureImage()
-            : await _cameraRepo.pickImageFromGallery();
+  Future<void> uploadPropertyImage(
+    String propertyId, [
+    Uint8List? imageData,
+  ]) async {
+    try {
+      if (imageData == null && !kIsWeb) {
+        final source = await _showImageSourceModal();
+        if (source != null) {
+          imageData =
+              source == ImageSource.camera
+                  ? await _cameraRepo.captureImage()
+                  : await _cameraRepo.pickImageFromGallery();
+        }
       }
-    }
 
-    if (imageData == null && kIsWeb) {
-      final result = await Get.toNamed(Routes.cameraView) as Uint8List?;
-      print("Received result from CameraView: ${result?.lengthInBytes}");
-      if (result != null) imageData = result;
-    }
+      if (imageData == null && kIsWeb) {
+        final result = await Get.toNamed(Routes.cameraView) as Uint8List?;
+        print("Received result from CameraView: ${result?.lengthInBytes}");
+        if (result != null) imageData = result;
+      }
 
-    if (imageData == null || imageData.isEmpty) return;
+      if (imageData == null || imageData.isEmpty) return;
 
-    Get.dialog(
-      const Center(child: CircularProgressIndicator()),
-      barrierDismissible: false,
-    );
-
-    final imageUrl = await _uploadToCloudStorage(propertyId, imageData);
-    print("imageUrl :${imageUrl}");
-    final index = properties.indexWhere((p) => p.id == propertyId);
-
-    if (index != -1) {
-      properties[index] = properties[index].copyWith(
-        images: [...properties[index].images, imageUrl],
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
       );
-      update();
+
+      final imageUrl = await _uploadToCloudStorage(propertyId, imageData);
+      print("imageUrl :${imageUrl}");
+      final index = properties.indexWhere((p) => p.id == propertyId);
+
+      if (index != -1) {
+        properties[index] = properties[index].copyWith(
+          images: [...properties[index].images, imageUrl],
+        );
+        update();
+      }
+
+      Get.back();
+      Get.snackbar(
+        'Success',
+        'Image uploaded successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+
+      _analytics.trackEvent(
+        'property_image_uploaded',
+        parameters: {'property_id': propertyId, 'image_url': imageUrl},
+      );
+    } catch (e) {
+      Get.back();
+      Get.snackbar(
+        'Error',
+        'Failed to upload image',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
-
-    Get.back();
-    Get.snackbar(
-      'Success',
-      'Image uploaded successfully',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-    );
-
-    _analytics.trackEvent('property_image_uploaded', parameters: {
-      'property_id': propertyId,
-      'image_url': imageUrl,
-    });
-  } catch (e) {
-    Get.back();
-    Get.snackbar(
-      'Error',
-      'Failed to upload image',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
   }
-}
 
   Future<void> shareProperty(String propertyId) async {
     try {
@@ -396,8 +410,8 @@ ${Routes.propertyDetail}
     String propertyId,
     Uint8List imageData,
   ) async {
-    // Implement your actual upload logic here
-    await Future.delayed(const Duration(seconds: 1)); // Simulate upload
+    
+    await Future.delayed(const Duration(seconds: 1)); 
     return '${ApiEndpoints.baseUrl}/property_images/${propertyId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
   }
 

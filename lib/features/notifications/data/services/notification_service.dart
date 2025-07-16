@@ -3,7 +3,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
-import 'package:property_listing_app/features/property/presentation/controllers/property_controller.dart';
+
+import '../../../../core/helper/firebase_notification_listener.dart';
 
 class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
@@ -13,8 +14,12 @@ class NotificationService {
   Future<NotificationService> initialize() async {
     await _setupFirebase();
     await _setupLocalNotifications();
-    await _handleInitialMessage(); // handle app killed
-    _setupInteractions(); // 🔥 handle background & foreground taps
+    await _handleInitialMessage();
+    _setupInteractions(); //
+
+    if (kIsWeb) {
+      setupWebNotificationRouteListener();
+    }
     return this;
   }
 
@@ -61,9 +66,9 @@ class NotificationService {
 
     //  Create Android notification channel here
     const androidChannel = AndroidNotificationChannel(
-      'property_channel', 
+      'property_channel',
       'Property Updates',
-      description: 'Notifications for property updates', 
+      description: 'Notifications for property updates',
       importance: Importance.high,
     );
 
@@ -76,8 +81,8 @@ class NotificationService {
 
   Future<void> _handleInitialMessage() async {
     final message = await _firebaseMessaging.getInitialMessage();
-    if (message?.data['propertyId'] != null) {
-      _handleNotificationInteraction(message!.data['propertyId']);
+    if (message != null && message.data['propertyId'] != null) {
+      _handleNotificationInteraction(message.data['propertyId']);
     }
   }
 
@@ -107,7 +112,7 @@ class NotificationService {
           ),
           iOS: const DarwinNotificationDetails(),
         ),
-        payload: message.data['propertyId'], 
+        payload: message.data['propertyId'],
       );
     }
   }
@@ -115,35 +120,19 @@ class NotificationService {
   void _handleNotificationInteraction(String? propertyId) async {
     if (propertyId == null) return;
 
-    final controller = Get.put(PropertyController());
+    try {
+      if (propertyId != '') {
+        debugPrint(' Found property: $propertyId');
 
-   
-    await controller.fetchProperties();
-
-   
-    final property = controller.properties.firstWhereOrNull(
-      (p) => p.id.toString() == propertyId,
-    );
-
-    if (property != null) {
-      debugPrint('🔔 Navigating to: /property-detail/$propertyId');
-      Get.toNamed('/property-detail/$propertyId', arguments: property);
-    } else {
-      debugPrint('❌ Property not found: $propertyId');
-      Get.snackbar(
-        'Property not found',
-        'The property may have been removed or not loaded yet.',
-      );
+        Get.offAndToNamed(
+          '/property-detail/$propertyId',
+          arguments: propertyId,
+        );
+      } else {
+        debugPrint(' Property not found: $propertyId');
+      }
+    } catch (e) {
+      debugPrint(' Error in notification handling: $e');
     }
-  }
-
-  Future<void> subscribeToTopic(String topic) async {
-    await _firebaseMessaging.subscribeToTopic(topic);
-    debugPrint(' Subscribed to topic: $topic');
-  }
-
-  Future<void> unsubscribeFromTopic(String topic) async {
-    await _firebaseMessaging.unsubscribeFromTopic(topic);
-    debugPrint(' Unsubscribed from topic: $topic');
   }
 }

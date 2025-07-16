@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:property_listing_app/core/app/routes/app_pages.dart';
 import 'package:property_listing_app/core/common/widgets/responsive_layout.dart';
 import 'package:property_listing_app/features/property/data/models/property_model.dart';
 import 'package:property_listing_app/features/property/presentation/controllers/property_controller.dart';
@@ -9,15 +8,18 @@ import 'package:property_listing_app/features/property/presentation/views/widget
 import 'package:property_listing_app/features/property/presentation/views/widgets/property_filters.dart';
 
 class PropertyListView extends GetView<PropertyController> {
-  const PropertyListView({super.key});
+ 
+  const PropertyListView(  {super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { 
+   
     return Scaffold(
       appBar: AppBar(
         title: const Text('Property Listings'),
         centerTitle: false,
         actions: [
+          
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () => _showSearch(context),
@@ -251,11 +253,12 @@ class PropertyListView extends GetView<PropertyController> {
   }
 
   void _navigateToDetail(Property property) {
-    Get.toNamed(
-      '${Routes.propertyDetail}/${property.id}',
-      arguments: property,
-      preventDuplicates: false,
-    );
+    print("property :${property.id}");
+   Get.toNamed(
+    '/property-detail/${property.id}',
+    preventDuplicates: false,
+  );
+
   }
 
   void _showFilters(BuildContext context) {
@@ -326,10 +329,10 @@ class PropertySearchDelegate extends SearchDelegate {
           subtitle: Text(property.location),
           onTap: () {
             close(context, null);
-            Get.toNamed(
-              '${Routes.propertyDetail}/${property.id}',
-              arguments: property,
-            );
+          Get.toNamed(
+    '/property-detail/${property.id}',
+    preventDuplicates: false,
+  );
           },
         );
       },

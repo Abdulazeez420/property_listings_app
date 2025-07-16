@@ -4,6 +4,6 @@ class Routes {
   Routes._();
 
   static const propertyList = '/property-list';
-  static const propertyDetail = '/property-detail';
+  static const propertyDetail = '/property-detail/:id';
   static const cameraView ='/camera-view';
 }

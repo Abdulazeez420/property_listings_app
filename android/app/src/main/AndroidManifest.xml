@@ -18,7 +18,7 @@
 
     <meta-data
         android:name="com.google.firebase.messaging.default_notification_channel_id"
-        android:value="default_notification_channel_id"/>
+        android:value="property_channel"/>
 
     <receiver
         android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingReceiver"
@@ -31,6 +31,7 @@
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
+            android:enableOnBackInvokedCallback="true"
             android:windowSoftInputMode="adjustResize">
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
@@ -50,6 +51,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+            <meta-data
+    android:name="firebase_analytics_collection_enabled"
+    android:value="false"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -15,17 +15,18 @@ class AppPages {
   static final routes = [
     GetPage(
       name: Routes.propertyList,
-      page: () => const PropertyListView(),
+      page: () => PropertyListView(),
       binding: PropertyBindings(),
       transition: Transition.fadeIn,
     ),
     GetPage(
       name: Routes.propertyDetail,
-      page: () =>  PropertyDetailView(property: Get.arguments,),
+      page: () => PropertyDetailView(propertyId: Get.parameters['id'] ?? ''),
       binding: PropertyBindings(),
       transition: Transition.fadeIn,
     ),
-     GetPage(
+
+    GetPage(
       name: Routes.cameraView,
       page: () => const CameraView(),
       binding: CameraBinding(),
